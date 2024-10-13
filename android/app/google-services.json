@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "285609775559",
+    "project_id": "vibes-app-81000",
+    "storage_bucket": "vibes-app-81000.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:285609775559:android:f154582c4c34907e11c9e2",
+        "android_client_info": {
+          "package_name": "com.example.vibes_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB5sV7P_DcI_zY9a582jEEOKRHTWNA_87U"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
