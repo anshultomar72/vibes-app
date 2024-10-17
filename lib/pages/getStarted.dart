@@ -2,6 +2,9 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:vibes_app/pages/login.dart';
 
+import 'BottomNavigationBar.dart';
+import 'homePage.dart';
+
 class GetStarted extends StatelessWidget {
   const GetStarted({super.key});
 
@@ -12,7 +15,7 @@ class GetStarted extends StatelessWidget {
           children: [
             Positioned.fill(
                 child: Image.asset(
-                "images/bg.png",
+                "assets/images/bg.png",
                   fit: BoxFit.cover,
               ),
             ),

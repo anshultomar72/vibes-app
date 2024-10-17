@@ -1,11 +1,13 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:async';
 
 class AuthStatus{
-    static const COMPLETE_PROFILE =1;
     static const INCOMPLETE_PROFILE =0;
+    static const COMPLETE_PROFILE =1;
+    static const NOT_SIGNED_IN = 2;
 }
 class AuthService{
 
@@ -143,7 +145,9 @@ class AuthService{
 
             // Retrieve user info after successful login
             User? user = userCredential.user;
+            // debugPrint(user.toString());
             if (user != null) {
+                debugPrint(user.toString());
                 // Fetch user document from Firestore where document ID is user.uid
                 DocumentSnapshot userDoc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
 
@@ -161,6 +165,8 @@ class AuthService{
                     await prefs.setString('User_email', emailId);
                     await prefs.setString('User_uid', user.uid);
                     await prefs.setString('User_name', name);
+
+                    debugPrint(prefs.getKeys().toString());
                     if (phoneNumber != null) {
                         await prefs.setString('User_phone', phoneNumber);
                     }
@@ -216,6 +222,18 @@ class AuthService{
             if (onProcessingDone != null) {
                 onProcessingDone();
             }
+        }
+    }
+
+    Future<int> checkSignInStatus() async {
+        final SharedPreferences prefs = await SharedPreferences.getInstance();
+        debugPrint(prefs.getKeys().toString());
+        debugPrint(prefs.getInt('profile_status').toString());
+        if (prefs.containsKey('User_email') &&
+            prefs.getString('User_email') != 'null') {
+            return prefs.getInt('profile_status')!;
+        } else {
+            return AuthStatus.NOT_SIGNED_IN;
         }
     }
 

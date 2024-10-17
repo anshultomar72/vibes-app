@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:vibes_app/pages/homePage.dart';
 import 'package:vibes_app/pages/register.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:vibes_app/pages/splash_screen.dart';
+import 'package:vibes_app/services/authentication.dart';
 import 'BottomNavigationBar.dart';
 
 class Login extends StatefulWidget {
@@ -15,6 +17,7 @@ class Login extends StatefulWidget {
 class _LoginState extends State<Login> {
   // Placeholder function for Google login (implement with Firebase or other service)
   final FirebaseAuth _auth = FirebaseAuth.instance;
+  AuthService authService = AuthService();
   void _loginWithGoogle() {
     // Integrate Google sign-in logic here
     print('Logging in with Google...');
@@ -40,7 +43,7 @@ class _LoginState extends State<Login> {
   TextEditingController emailController = TextEditingController();
   TextEditingController passwordController = TextEditingController();
   void _login() async {
-    print(emailController.text);
+
     try{
       final credentials = await _auth.signInWithEmailAndPassword(email: emailController.text, password: passwordController.text);
       _goToHome();
@@ -64,7 +67,7 @@ class _LoginState extends State<Login> {
           // Background Image
           Positioned.fill(
             child: Image.asset(
-              'images/bg2.png',
+              'assets/images/bg2.png',
               fit: BoxFit.cover,
             ),
           ),
@@ -135,9 +138,12 @@ class _LoginState extends State<Login> {
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 20),
                   child: ElevatedButton(
-                    onPressed: () {
+                    onPressed: () async{
                       // Handle login functionality here
-                     _login();
+                     authService.login(emailId: emailController.text, password: passwordController.text, onSuccess: (){
+                       Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (BuildContext context)=>const SplashScreen()), (Route<dynamic> route) => false);
+
+                     });
                     },
                     style: ElevatedButton.styleFrom(
                       minimumSize: const Size(double.infinity, 50),

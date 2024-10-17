@@ -1,6 +1,9 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:vibes_app/pages/splash_screen.dart';
+import 'package:vibes_app/services/authentication.dart';
+import 'BottomNavigationBar.dart';
 import 'homePage.dart';
 import 'login.dart';
 
@@ -13,6 +16,7 @@ class Register extends StatefulWidget {
 
 class _RegisterState extends State<Register> {
   final FirebaseAuth _auth = FirebaseAuth.instance;
+  AuthService authService =AuthService();
   // Placeholder function for Google registration (implement with Firebase or other service)
   void _registerWithGoogle() {
     print('Registering with Google...');
@@ -48,7 +52,7 @@ class _RegisterState extends State<Register> {
   }
   void _goToHome(){
 
-    Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (context) =>  HomePage()), (route) => false);
+    Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (context) =>  BottomNavigationBarPage()), (route) => false);
 
   }
   @override
@@ -60,7 +64,7 @@ class _RegisterState extends State<Register> {
           // Background Image
           Positioned.fill(
             child: Image.asset(
-              'images/bg2.png',
+              'assets/images/bg2.png',
               fit: BoxFit.cover,
             ),
           ),
@@ -178,8 +182,10 @@ class _RegisterState extends State<Register> {
                     padding: const EdgeInsets.symmetric(horizontal: 20),
                     child: ElevatedButton(
                       onPressed: () {
-                        // Handle registration logic here
-                        _register();
+                        authService.register(email: emailController.text, password: passwordController.text, onSuccess:(){
+                          Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (BuildContext context)=>const SplashScreen()), (Route<dynamic> route) => false);
+                        } );
+
                       },
                       style: ElevatedButton.styleFrom(
                         minimumSize: const Size(double.infinity, 50),
