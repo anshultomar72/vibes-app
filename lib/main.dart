@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:vibes_app/pages/getStarted.dart';
+import 'package:provider/provider.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:vibes_app/pages/splash_screen.dart';
+import 'package:vibes_app/provider/cart_provider.dart';
+import 'package:vibes_app/provider/menu_provider.dart';
 import 'firebase_options.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 
@@ -18,7 +20,15 @@ Future<void> main() async {
     DeviceOrientation.portraitDown,
   ]);
 
-  runApp(const MyApp());
+  runApp(
+      MultiProvider(
+        providers: [
+         ChangeNotifierProvider(create: (context) => MenuProvider()),
+          ChangeNotifierProvider(create: (context) => CartProvider()),
+        ],
+        child: const MyApp(),
+      ),
+  );
 }
 
 class MyApp extends StatelessWidget {

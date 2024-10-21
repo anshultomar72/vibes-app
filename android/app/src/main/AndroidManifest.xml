@@ -1,8 +1,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <application
-        android:label="vibes_app"
+        android:label="Vibess"
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher"
+        android:icon="@mipmap/vibes_logo"
         android:enableOnBackInvokedCallback="true">
 
         <activity

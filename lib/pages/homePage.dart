@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:carousel_slider/carousel_slider.dart';
+import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:vibes_app/pages/menu_page.dart';
+
+import '../provider/menu_provider.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -14,11 +18,25 @@ class _HomePageState extends State<HomePage> {
   String profileImageUrl = 'https://avatars.githubusercontent.com/u/98070776?v=4';
   String userName = 'Hardik';
   List<String> promotionBanners = [];
+  late MenuProvider _menuProvider;
 
   @override
   void initState() {
     super.initState();
     fetchPromotionBanners();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      // Fetch the categories after the build is complete
+      _menuProvider = Provider.of<MenuProvider>(context , listen: false);
+      _menuProvider.fetchAllCategories();
+    });
+
+  }
+  Future<void> _refreshPage() async {
+    // Refetch the promotion banners
+    fetchPromotionBanners();
+    // Refetch the categories
+    _menuProvider.fetchAllCategories();
+    // You can add any other refresh logic here (e.g., fetching special items)
   }
 
   void fetchPromotionBanners() async {
@@ -96,116 +114,143 @@ class _HomePageState extends State<HomePage> {
         elevation: 4.0,
         shadowColor: Colors.grey[800],
       ),
-      body: Container(
-        color: Colors.black,
-        child: Column(
-          children: [
-            // Search bar
-            Padding(
-              padding: EdgeInsets.fromLTRB(
-                screenWidth * 0.02,
-                screenHeight * 0.02,
-                screenWidth * 0.02,
-                screenHeight * 0.01,
-              ),
-              child: TextField(
-                decoration: InputDecoration(
-                  hintText: 'Search your interesting foods...',
-                  prefixIcon: Icon(Icons.search),
-                  filled: true,
-                  fillColor: Colors.white,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(30),
-                    borderSide: BorderSide.none,
+
+      body: RefreshIndicator(
+        onRefresh: _refreshPage,
+        color: Colors.deepOrange,
+        child: Container(
+          color: Colors.black,
+          child: Column(
+            children: [
+              // Search bar
+              Padding(
+                padding: EdgeInsets.fromLTRB(
+                  screenWidth * 0.02,
+                  screenHeight * 0.02,
+                  screenWidth * 0.02,
+                  screenHeight * 0.01,
+                ),
+                child: TextField(
+                  decoration: InputDecoration(
+                    hintText: 'Search your interesting foods...',
+                    prefixIcon: Icon(Icons.search),
+                    filled: true,
+                    fillColor: Colors.white,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(30),
+                      borderSide: BorderSide.none,
+                    ),
                   ),
                 ),
               ),
-            ),
-            Expanded(
-              child: ListView(
-                children: [
-                  // Special Offers
-                  Padding(
-                    padding: EdgeInsets.fromLTRB(screenWidth * 0.02, 10, 0, 10),
-                    child: Text(
-                      "Special Offers",
-                      style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
-                    ),
-                  ),
-                  // Promotions Carousel
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(0 , 0,0,5),
-                    child: CarouselSlider(
-                      options: CarouselOptions(
-                        height: screenHeight * 0.22,
-                        viewportFraction: 0.9,
-                        enlargeCenterPage: true,
-                        autoPlay: true,
+              Expanded(
+                child: ListView(
+                  children: [
+                    // Special Offers
+                    Padding(
+                      padding: EdgeInsets.fromLTRB(screenWidth * 0.02, 10, 0, 10),
+                      child: Text(
+                        "Special Offers",
+                        style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
                       ),
-                      items: promotionBanners.map((bannerUrl) {
-                        return Builder(
-                          builder: (BuildContext context) {
-                            return Container(
-                              width: screenWidth * 0.9,
-                              margin: EdgeInsets.symmetric(horizontal: 5.0),
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(10),
-                                image: DecorationImage(
-                                  image: NetworkImage(bannerUrl),
-                                  fit: BoxFit.cover,
-                                ),
-                              ),
+                    ),
+                    // Promotions Carousel
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(0, 0, 0, 5),
+                      child: CarouselSlider(
+                        options: CarouselOptions(
+                          height: screenHeight * 0.23,
+                          viewportFraction: 0.9,
+                          enlargeCenterPage: true,
+                          autoPlay: true,
+                        ),
+              items: promotionBanners.map((bannerUrl) {
+                return Builder(
+                  builder: (BuildContext context) {
+                    return Container(
+                      width: screenWidth * 0.9,
+                      margin: const EdgeInsets.symmetric(horizontal: 5.0),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(20),  // Ensure images are clipped by the border radius
+                        child: Stack(
+                          fit: StackFit.expand,
+                          children: [
+                            Image.network(
+                              bannerUrl,
+                              fit: BoxFit.cover,
+                              loadingBuilder: (BuildContext context, Widget child, ImageChunkEvent? loadingProgress) {
+                                if (loadingProgress == null) {
+                                  // Image is loaded, show the image
+                                  return child;
+                                } else {
+                                  // Image is still loading, show a progress indicator
+                                  return Center(
+                                    child: CircularProgressIndicator(
+                                      value: loadingProgress.expectedTotalBytes != null
+                                          ? loadingProgress.cumulativeBytesLoaded / (loadingProgress.expectedTotalBytes ?? 1)
+                                          : null,
+                                    ),
+                                  );
+                                }
+                              },
+                              errorBuilder: (BuildContext context, Object exception, StackTrace? stackTrace) {
+                                // Show error icon if the image fails to load
+                                return const Center(
+                                  child: Icon(
+                                    Icons.error,
+                                    color: Colors.red,
+                                    size: 50,
+                                  ),
+                                );
+                              },
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                );
+              }).toList(),
+            ),
+          ),
+                    // Menu categories
+                    Padding(
+                      padding: EdgeInsets.all(screenWidth * 0.04),
+                      child: Container(
+                        height: screenHeight * 0.20,
+                        child: Consumer<MenuProvider>(
+                          builder: (context, menuProvider, child) {
+                            if (menuProvider.isLoading) {
+                              return const Center(child: CircularProgressIndicator());
+                            }
+                            return GridView.count(
+                              crossAxisCount: 2,
+                              scrollDirection: Axis.horizontal,
+                              children: menuProvider.categories
+                                  .map((category) => _buildCategoryItem(category.imageUrl, category.name , category.id))
+                                  .toList(),
                             );
                           },
-                        );
-                      }).toList(),
-                    ),
-                  ),
-                  // Menu categories
-                  Padding(
-                    padding: EdgeInsets.all(screenWidth * 0.02),
-                    child: Container(
-                      height: screenHeight * 0.18,
-                      child: GridView.count(
-                        crossAxisCount: 2,
-                        scrollDirection: Axis.horizontal,
-                        children: [
-                          _buildCategoryItem("assets/images/manchurian.png", "Manchur"),
-                          _buildCategoryItem("assets/images/momos.png", "Momo"),
-                          _buildCategoryItem("assets/images/naan.png", "Naan"),
-                          _buildCategoryItem("assets/images/paratha.png", "Paratha"),
-                          _buildCategoryItem("assets/images/pav_bhaji.png", "Pav Bhaji"),
-                          _buildCategoryItem("assets/images/salad.png", "Salad"),
-                          _buildCategoryItem("assets/images/manchurian.png", "Manchur"),
-                          _buildCategoryItem("assets/images/momos.png", "Momo"),
-                          _buildCategoryItem("assets/images/naan.png", "Naan"),
-                          _buildCategoryItem("assets/images/paratha.png", "Paratha"),
-                          _buildCategoryItem("assets/images/pav_bhaji.png", "Pav Bhaji"),
-                          _buildCategoryItem("assets/images/salad.png", "Salad"),
-                          _buildCategoryItem("assets/images/manchurian.png", "Manchur"),
-                          _buildCategoryItem("assets/images/momos.png", "Momo"),
-                          _buildCategoryItem("assets/images/naan.png", "Naan"),
-                          _buildCategoryItem("assets/images/paratha.png", "Paratha"),
-                          _buildCategoryItem("assets/images/pav_bhaji.png", "Pav Bhaji"),
-                          _buildCategoryItem("assets/images/salad.png", "Salad"),
-
-                        ],
+                        ),
                       ),
                     ),
-                  ),
-                  // Weekly Special
-                  SpecialItems(),
-                  SizedBox(height: screenHeight*0.25,)
-                ],
+                    // Weekly Special
+                    SpecialItems(),
+                    SizedBox(height: screenHeight*0.25,)
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildCategoryItem(String icon, String label) {
+  Widget _buildCategoryItem(String icon, String label ,String id) {
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
@@ -213,18 +258,55 @@ class _HomePageState extends State<HomePage> {
           width: 50,  // Set fixed size for the png icon
           height: 50,
           child: GestureDetector(
-            onTap: () {},
-            child: Image.asset(
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (BuildContext context) => MenuPage(category: id,)),
+              );
+            },
+            child: Image.network(
               icon,
-              width: 50,
-              height: 50,
+              width: 100,
+              height: 100,
+              loadingBuilder: (BuildContext context, Widget child, ImageChunkEvent? loadingProgress) {
+                if (loadingProgress == null) {
+                  // Image is loaded
+                  return child;
+                } else {
+                  // Image is still loading
+                  return Center(
+                    child: CircularProgressIndicator(
+                      value: loadingProgress.expectedTotalBytes != null
+                          ? loadingProgress.cumulativeBytesLoaded / (loadingProgress.expectedTotalBytes ?? 1)
+                          : null,
+                    ),
+                  );
+                }
+              },
+              errorBuilder: (BuildContext context, Object exception, StackTrace? stackTrace) {
+                // Display a placeholder or error icon when the image fails to load
+                return const Icon(
+                  Icons.error,
+                  color: Colors.red,
+                  size: 50,
+                );
+              },
             ),
           ),
         ),
-        Text(label, style: TextStyle(color: Colors.white)),
+        Expanded(
+          child: Text(
+            label,
+            style: const TextStyle(color: Colors.white, fontSize: 12),
+            textAlign: TextAlign.center,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
       ],
     );
   }
+
 
 
 }
@@ -259,7 +341,7 @@ class SpecialItems extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Padding(
-                  padding: EdgeInsets.fromLTRB(MediaQuery.of(context).size.width * 0.02, 20, 0, 10),
+                  padding: EdgeInsets.fromLTRB(MediaQuery.of(context).size.width * 0.02, 0, 0, 10),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
