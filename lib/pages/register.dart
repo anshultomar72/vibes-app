@@ -88,28 +88,6 @@ class _RegisterState extends State<Register> {
                   ),
                   const SizedBox(height: 50),
 
-                  // Name Field
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    child: TextField(
-
-                      style: const TextStyle(color: Colors.black),
-                      decoration: InputDecoration(
-                        floatingLabelBehavior: FloatingLabelBehavior.never,
-                        filled: true,
-                        fillColor: Colors.white.withOpacity(0.8), // Slightly transparent background
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide.none,
-                        ),
-                        labelText: 'Name',
-                        hintText: 'Enter your name',
-                        prefixIcon: const Icon(Icons.person),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-
                   // Email Field
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 20),

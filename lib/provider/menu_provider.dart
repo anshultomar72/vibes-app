@@ -84,6 +84,7 @@ class MenuProvider extends ChangeNotifier {
         return Tags(
           id: doc.id,
           name: doc['name'],
+          imageUrl : doc['imageUrl']
         );
       }).toList();
     } catch (e) {

@@ -1,19 +1,23 @@
 import 'package:flutter/material.dart';
+import 'package:vibes_app/Widgets/drawer.dart';
 import 'package:vibes_app/pages/homePage.dart';
+
+import 'menu_page.dart';
 
 class BottomNavigationBarPage extends StatefulWidget {
   const BottomNavigationBarPage({super.key});
 
   @override
-  State<BottomNavigationBarPage> createState() => _BottomNavigationBarPageState();
+  State<BottomNavigationBarPage> createState() => BottomNavigationBarPageState ();
 }
 
-class _BottomNavigationBarPageState extends State<BottomNavigationBarPage> {
+class BottomNavigationBarPageState  extends State<BottomNavigationBarPage> {
   int _selectedIndex = 0;
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   static const List<Widget> _widgetOptions = <Widget>[
     HomePage(),
-    Center(child: Text('Index 1: Rooms', style: TextStyle(color: Colors.black))),
-    Center(child: Text('Index 2: Profile', style: TextStyle(color: Colors.black))),
+    MenuPage(category: "all",),
+    Center(child: Text('Index 3: Hotel', style: TextStyle(color: Colors.black))),
   ];
 
   void _onItemTapped(int index) {
@@ -26,7 +30,9 @@ class _BottomNavigationBarPageState extends State<BottomNavigationBarPage> {
   Widget build(BuildContext context) {
 
     return Scaffold(
-      extendBody: true, // This allows the body to extend behind the bottom navigation bar
+      key: _scaffoldKey, // Assign the GlobalKey to the Scaffold
+      extendBody: true,// This allows the body to extend behind the bottom navigation bar
+      drawer: const CustomDrawer(),
       body: Stack(
         children: [
           _widgetOptions.elementAt(_selectedIndex),
@@ -53,8 +59,8 @@ class _BottomNavigationBarPageState extends State<BottomNavigationBarPage> {
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
           _buildNavItem(Icons.home_filled, 'Home', 0),
-          _buildNavItem(Icons.hotel_sharp, 'Hotel', 1),
-          _buildNavItem(Icons.person_2_sharp, 'Profile', 2),
+          _buildNavItem(Icons.fastfood, 'All Menu', 1),
+          _buildNavItem(Icons.hotel_sharp, 'Hotel', 2),
         ],
       ),
     );
@@ -82,5 +88,8 @@ class _BottomNavigationBarPageState extends State<BottomNavigationBarPage> {
         ],
       ),
     );
+  }
+  void openDrawer() {
+    _scaffoldKey.currentState?.openDrawer();
   }
 }

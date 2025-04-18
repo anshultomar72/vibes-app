@@ -76,7 +76,7 @@ class AuthService{
         }
     }
 
-    Future<void> completeProfile({
+    Future completeProfile({
         required String phoneNumber,
         required String address,
         required String name,
@@ -95,14 +95,38 @@ class AuthService{
             String? uid = prefs.getString('User_uid');
 
             if (uid != null) {
-                // Update user data in Firestore
+                // Get the current user document
+                DocumentSnapshot userDoc = await FirebaseFirestore.instance
+                    .collection('users')
+                    .doc(uid)
+                    .get();
+
+                // Initialize the addresses list
+                List<String> addresses = [];
+
+                // If the document exists and has addresses, get them
+                if (userDoc.exists) {
+                    Map<String, dynamic> userData = userDoc.data() as Map<String, dynamic>;
+                    if (userData.containsKey('addresses')) {
+                        addresses = List<String>.from(userData['addresses']);
+                    }
+                }
+
+                // Add the new address if it's not already in the list
+                if (!addresses.contains(address)) {
+                    addresses.add(address);
+                }
+
+                // Update user data in Firestore with the addresses list
                 await FirebaseFirestore.instance.collection('users').doc(uid).update({
                     'phone': phoneNumber,
-                    'address': address,
+                    'addresses': addresses,
                     'name': name,
                 });
 
+                // Update SharedPreferences
                 await prefs.setString('User_name', name);
+                await prefs.setString('User_phone', phoneNumber);
                 await prefs.setInt('profile_status', AuthStatus.COMPLETE_PROFILE);
 
                 if (onProcessingDone != null) {
@@ -112,6 +136,53 @@ class AuthService{
             } else {
                 if (onFailure != null) {
                     onFailure('User UID not found in SharedPreferences.');
+                }
+            }
+        } catch (e) {
+            if (onFailure != null) {
+                onFailure(e.toString());
+            }
+        } finally {
+            if (onProcessingDone != null) {
+                onProcessingDone();
+            }
+        }
+    }
+    Future<void> updateProfile({
+        required String phoneNumber,
+        required String name,
+        void Function()? onProcessing,
+        void Function()? onProcessingDone,
+        required void Function() onSuccess,
+        void Function(String?)? onFailure,
+    }) async {
+        if (onProcessing != null) {
+            onProcessing();
+        }
+
+        try {
+            SharedPreferences prefs = await SharedPreferences.getInstance();
+            String? uid = prefs.getString('User_uid');
+
+            if (uid != null) {
+                // Update user data in Firestore
+                await FirebaseFirestore.instance.collection('users').doc(uid).update({
+                    'phone': phoneNumber,
+                    'name': name,
+                });
+
+                // Update SharedPreferences
+                await prefs.setString('User_name', name);
+                await prefs.setString('User_phone', phoneNumber);
+
+
+                if (onProcessingDone != null) {
+                    onProcessingDone();
+                }
+                onSuccess();
+            } else {
+                if (onFailure != null) {
+                    onFailure('User UID not found.');
                 }
             }
         } catch (e) {
@@ -158,7 +229,7 @@ class AuthService{
                     // Retrieve phone number and address from Firestore document
                     String? phoneNumber = userData['phone'];
                     String? address = userData['address'];
-                    String name = userData['name'] ?? 'Unknown';
+                    String name = userData['name'] ?? 'User';
 
                     // Store data in SharedPreferences
                     SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -229,6 +300,7 @@ class AuthService{
         final SharedPreferences prefs = await SharedPreferences.getInstance();
         debugPrint(prefs.getKeys().toString());
         debugPrint(prefs.getInt('profile_status').toString());
+        debugPrint(prefs.getString('User_name'));
         if (prefs.containsKey('User_email') &&
             prefs.getString('User_email') != 'null') {
             return prefs.getInt('profile_status')!;

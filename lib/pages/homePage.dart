@@ -3,9 +3,15 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:shimmer/shimmer.dart';
 import 'package:vibes_app/pages/menu_page.dart';
-
+import 'package:vibes_app/pages/special_item_widget.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import '../provider/cart_provider.dart';
 import '../provider/menu_provider.dart';
+import '../provider/user_provider.dart';
+import 'BottomNavigationBar.dart';
+import 'cart_page.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -15,8 +21,7 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  String profileImageUrl = 'https://avatars.githubusercontent.com/u/98070776?v=4';
-  String userName = 'Hardik';
+
   List<String> promotionBanners = [];
   late MenuProvider _menuProvider;
 
@@ -25,12 +30,14 @@ class _HomePageState extends State<HomePage> {
     super.initState();
     fetchPromotionBanners();
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      Provider.of<UserProvider>(context, listen: false).fetchUserDetails();
       // Fetch the categories after the build is complete
       _menuProvider = Provider.of<MenuProvider>(context , listen: false);
       _menuProvider.fetchAllCategories();
     });
 
   }
+
   Future<void> _refreshPage() async {
     // Refetch the promotion banners
     fetchPromotionBanners();
@@ -50,29 +57,43 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
+    final userProvider = Provider.of<UserProvider>(context);
+
+    // Access the BottomNavigationBarPage's state to open the drawer
+    final parentState = context.findAncestorStateOfType<BottomNavigationBarPageState >();
     double screenWidth = MediaQuery.of(context).size.width;
     double screenHeight = MediaQuery.of(context).size.height;
     return Scaffold(
       appBar: AppBar(
-        leading: Container(
-          margin: const EdgeInsets.all(8.0),
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            border: Border.all(color: Colors.white, width: 2),
-          ),
-          child: ClipOval(
-            child: Image.network(
-              profileImageUrl,
-              fit: BoxFit.cover,
-              width: 40,
-              height: 40,
-              errorBuilder: (context, error, stackTrace) => Icon(
-                Icons.person,
-                size: 40,
-                color: Colors.white,
-              ),
-            ),
-          ),
+        leading: Builder(
+          builder:(context){
+            return
+              GestureDetector(
+                onTap: () {
+                  parentState?.openDrawer(); // Call the drawer open function
+                },
+                child: Container(
+                  margin: const EdgeInsets.all(8.0),
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.white, width: 2),
+                  ),
+                  child: ClipOval(
+                    child: Image.network(
+                        userProvider.profileImageUrl,
+                      fit: BoxFit.cover,
+                      width: 40,
+                      height: 40,
+                      errorBuilder: (context, error, stackTrace) => const Icon(
+                        Icons.person,
+                        size: 40,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                ),
+              );
+          }
         ),
         title: SizedBox(
           width: screenWidth * 0.5,
@@ -80,7 +101,7 @@ class _HomePageState extends State<HomePage> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                "Hello, $userName",
+                "Hello, ${userProvider.userName}",
                 style: const TextStyle(
                   color: Colors.white,
                   fontSize: 18,
@@ -105,15 +126,46 @@ class _HomePageState extends State<HomePage> {
             icon: const Icon(Icons.notifications_outlined, color: Colors.white, size: 28),
             onPressed: () {},
           ),
-          IconButton(
-            icon: const Icon(Icons.shopping_cart_rounded, color: Colors.white, size: 28),
-            onPressed: () {},
+          Stack(
+            alignment: Alignment.topRight,
+            children: [
+              IconButton(
+                icon: const Icon(Icons.shopping_cart_rounded, color: Colors.white, size: 28),
+                onPressed: () {
+                  Navigator.push(context, MaterialPageRoute(builder: (BuildContext context) => CartPage()));
+                },
+              ),
+              Consumer<CartProvider>(
+                builder: (context, cartProvider, child) {
+                  // Only show the count badge if itemCount > 0
+                  return cartProvider.itemCount > 0
+                      ? Positioned(
+                    top: -2,
+                    right: 5,
+                    child: Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: const BoxDecoration(
+                        color: Colors.red,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Text(
+                        "${cartProvider.itemCount}",
+                        style: const TextStyle(color: Colors.white, fontSize: 12),
+                      ),
+                    ),
+                  )
+                      : const SizedBox.shrink(); // Return empty widget when count is 0
+                },
+              ),
+            ],
           ),
         ],
         backgroundColor: Colors.black,
         elevation: 4.0,
         shadowColor: Colors.grey[800],
       ),
+
+
 
       body: RefreshIndicator(
         onRefresh: _refreshPage,
@@ -122,31 +174,10 @@ class _HomePageState extends State<HomePage> {
           color: Colors.black,
           child: Column(
             children: [
-              // Search bar
-              Padding(
-                padding: EdgeInsets.fromLTRB(
-                  screenWidth * 0.02,
-                  screenHeight * 0.02,
-                  screenWidth * 0.02,
-                  screenHeight * 0.01,
-                ),
-                child: TextField(
-                  decoration: InputDecoration(
-                    hintText: 'Search your interesting foods...',
-                    prefixIcon: Icon(Icons.search),
-                    filled: true,
-                    fillColor: Colors.white,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(30),
-                      borderSide: BorderSide.none,
-                    ),
-                  ),
-                ),
-              ),
               Expanded(
                 child: ListView(
                   children: [
-                    // Special Offers
+       // ====================Special Offers =============
                     Padding(
                       padding: EdgeInsets.fromLTRB(screenWidth * 0.02, 10, 0, 10),
                       child: Text(
@@ -154,7 +185,8 @@ class _HomePageState extends State<HomePage> {
                         style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
                       ),
                     ),
-                    // Promotions Carousel
+
+    // ====================================Promotions Carousel ===========================
                     Padding(
                       padding: const EdgeInsets.fromLTRB(0, 0, 0, 5),
                       child: CarouselSlider(
@@ -188,10 +220,13 @@ class _HomePageState extends State<HomePage> {
                                 } else {
                                   // Image is still loading, show a progress indicator
                                   return Center(
-                                    child: CircularProgressIndicator(
-                                      value: loadingProgress.expectedTotalBytes != null
-                                          ? loadingProgress.cumulativeBytesLoaded / (loadingProgress.expectedTotalBytes ?? 1)
-                                          : null,
+                                    child: SizedBox(
+                                      height: 24, // Smaller size
+                                      width: 24,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2, // Thinner stroke for elegance
+                                        color: Colors.blueAccent, // Custom color
+                                      ),
                                     ),
                                   );
                                 }
@@ -216,15 +251,30 @@ class _HomePageState extends State<HomePage> {
               }).toList(),
             ),
           ),
-                    // Menu categories
+
+    // ======================================= Menu categories ===============================
                     Padding(
-                      padding: EdgeInsets.all(screenWidth * 0.04),
+                      padding: EdgeInsets.fromLTRB(
+                          screenWidth * 0.02,
+                          screenWidth * 0.06,
+                          screenWidth * 0.04,
+                          screenWidth * 0.00
+                      ),
                       child: Container(
-                        height: screenHeight * 0.20,
+                        height: screenHeight * 0.25,
                         child: Consumer<MenuProvider>(
                           builder: (context, menuProvider, child) {
                             if (menuProvider.isLoading) {
-                              return const Center(child: CircularProgressIndicator());
+                              return Center(
+                                child: SizedBox(
+                                  height: 24, // Smaller size
+                                  width: 24,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2, // Thinner stroke for elegance
+                                    color: Colors.blueAccent, // Custom color
+                                  ),
+                                ),
+                              );
                             }
                             return GridView.count(
                               crossAxisCount: 2,
@@ -237,8 +287,10 @@ class _HomePageState extends State<HomePage> {
                         ),
                       ),
                     ),
-                    // Weekly Special
+
+      // =================================== Weekly Special===================================
                     SpecialItems(),
+
                     SizedBox(height: screenHeight*0.25,)
                   ],
                 ),
@@ -250,165 +302,74 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget _buildCategoryItem(String icon, String label ,String id) {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        SizedBox(
-          width: 50,  // Set fixed size for the png icon
-          height: 50,
-          child: GestureDetector(
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (BuildContext context) => MenuPage(category: id,)),
-              );
-            },
-            child: Image.network(
-              icon,
-              width: 100,
-              height: 100,
-              loadingBuilder: (BuildContext context, Widget child, ImageChunkEvent? loadingProgress) {
-                if (loadingProgress == null) {
-                  // Image is loaded
-                  return child;
-                } else {
-                  // Image is still loading
-                  return Center(
-                    child: CircularProgressIndicator(
-                      value: loadingProgress.expectedTotalBytes != null
-                          ? loadingProgress.cumulativeBytesLoaded / (loadingProgress.expectedTotalBytes ?? 1)
-                          : null,
-                    ),
-                  );
-                }
-              },
-              errorBuilder: (BuildContext context, Object exception, StackTrace? stackTrace) {
-                // Display a placeholder or error icon when the image fails to load
-                return const Icon(
-                  Icons.error,
-                  color: Colors.red,
-                  size: 50,
-                );
-              },
-            ),
+//==============================Widget for Category items ========================
+  Widget _buildCategoryItem(String icon, String label, String id) {
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (BuildContext context) => MenuPage(category: id),
           ),
-        ),
-        Expanded(
-          child: Text(
-            label,
-            style: const TextStyle(color: Colors.white, fontSize: 12),
-            textAlign: TextAlign.center,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ),
-      ],
-    );
-  }
-
-
-
-}
-
-class SpecialItems extends StatelessWidget {
-  const SpecialItems({Key? key}) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return StreamBuilder<QuerySnapshot>(
-      stream: FirebaseFirestore.instance.collection("special").snapshots(),
-      builder: (context, snapshot) {
-        if (snapshot.hasError) {
-          return Text('Error: ${snapshot.error}');
-        }
-        if (!snapshot.hasData) {
-          return const Center(child: CircularProgressIndicator());
-        }
-
-        final specials = snapshot.data!.docs;
-
-        return ListView.builder(
-          shrinkWrap: true,
-          physics: NeverScrollableScrollPhysics(),
-          itemCount: specials.length,
-          itemBuilder: (context, specialIndex) {
-            final special = specials[specialIndex].data() as Map<String, dynamic>;
-            final title = special['title'] as String;
-            final menuList = List<String>.from(special['menu_list'] ?? []);
-
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Padding(
-                  padding: EdgeInsets.fromLTRB(MediaQuery.of(context).size.width * 0.02, 0, 0, 10),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        title,
-                        style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
-                      ),
-                      TextButton(
-                        onPressed: () {},
-                        child: Text("See all", style: TextStyle(color: Colors.green)),
-                      ),
-                    ],
-                  ),
-                ),
-                SizedBox(
-                  height: MediaQuery.of(context).size.height * 0.2,
-                  child: ListView.builder(
-                    scrollDirection: Axis.horizontal,
-                    itemCount: menuList.length,
-                    itemBuilder: (context, menuIndex) {
-                      return FutureBuilder<DocumentSnapshot>(
-                        future: FirebaseFirestore.instance.collection('menu_items').doc(menuList[menuIndex]).get(),
-                        builder: (context, menuItemSnapshot) {
-                          if (!menuItemSnapshot.hasData) {
-                            return const SizedBox(width: 150, child: Center(child: CircularProgressIndicator()));
-                          }
-
-                          final menuItemData = menuItemSnapshot.data!.data() as Map<String, dynamic>?;
-                          final itemName = menuItemData?['name'] as String? ?? 'Unknown Item';
-                          final imageUrl = menuItemData?['image_url'] as String? ?? 'assets/images/placeholder.png';
-
-                          return _buildSpecialItem(itemName, imageUrl);
-                        },
-                      );
-                    },
-                  ),
-                ),
-              ],
-            );
-          },
         );
       },
-    );
-  }
-  Widget _buildSpecialItem(String name, String imageUrl) {
-    return Container(
-      width: 150,
-      margin: const EdgeInsets.only(left: 10),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(10),
-      ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          ClipRRect(
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(10)),
-            child: imageUrl.startsWith('http')
-                ? Image.network(imageUrl, height: 100, width: 150, fit: BoxFit.scaleDown)
-                : Image.asset(imageUrl, height: 100, width: 150, fit: BoxFit.cover),
+          // Icon/Image Section
+          SizedBox(
+            width: 60,
+            height: 60,
+            child: CachedNetworkImage(
+              imageUrl: icon,
+              placeholder: (context, url) => _buildSkeletonLoader(), // Skeleton loader as placeholder
+              errorWidget: (context, url, error) => const Icon(
+                Icons.error,
+                color: Colors.red,
+                size: 50,
+              ),
+              fadeInDuration: const Duration(milliseconds: 300), // Smooth transition
+              fit: BoxFit.cover,
+            ),
           ),
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Text(name, style: const TextStyle(fontWeight: FontWeight.bold)),
+
+          const SizedBox(height: 5),
+
+          // Text Section
+          Expanded(
+            child: Text(
+              label,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+              ),
+              textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
           ),
         ],
       ),
     );
   }
+
+// Helper function to create the skeleton loader using Shimmer
+  Widget _buildSkeletonLoader() {
+    return Shimmer.fromColors(
+      baseColor: Colors.grey[300]!,
+      highlightColor: Colors.grey[100]!,
+      child: Container(
+        width: 60,
+        height: 60,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(8),
+        ),
+      ),
+    );
+  }
 }
+
+
+

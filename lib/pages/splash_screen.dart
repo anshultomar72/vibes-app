@@ -39,11 +39,11 @@ class _SplashScreenState extends State<SplashScreen> {
           MaterialPageRoute(builder: (BuildContext context)=>const GetStarted())
       );
     }
-    // else if(signInStatus==AuthStatus.INCOMPLETE_PROFILE){
-    //   Navigator.of(context).pushReplacement(
-    //       MaterialPageRoute(builder: (BuildContext context)=>const CompleteProfilePage())
-    //   );
-    // }
+    else if(signInStatus==AuthStatus.INCOMPLETE_PROFILE){
+      Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (BuildContext context)=>const CompleteProfilePage())
+      );
+    }
     else {
       Navigator.of(context).pushReplacement(
           MaterialPageRoute(builder: (BuildContext context)=>const BottomNavigationBarPage())
